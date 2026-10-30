@@ -6,8 +6,8 @@ The work is split into milestones. Each ends with a report and a go / no-go deci
 
 | Milestone | Status | Date | Report | Open issues |
 |---|---|---|---|---|
-| M0 Setup | not started | | | |
-| M1 Analytical forward chain | not started | | | |
+| M0 Setup | done | 2026-10-30 | [M0 report](reports/M0_report.md) | Untagged CONTEXT.md values given assumed tags (water path [M], chamber depth [S], requirements [S]); confirm |
+| M1 Analytical forward chain | done, awaiting review | 2026-10-30 | [M1 report](reports/M1_report.md) | 4 external checks fail: P1 water loss (6.9 vs 20 dB quoted), today's single-shot SNR -46/-51 dB vs -40 to -20 (placeholder µa, S), 7 µm loss 60.5 vs 50 dB; bead spectrum peak 17.8 vs 12 MHz; bead raw data not available; 47 TBD values |
 | M2 Identifiability study | not started | | | |
 | M3 Core-shell and echo library | not started | | | |
 | M4 Joint inverse fit | not started | | | |

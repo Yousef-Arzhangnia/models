@@ -1,0 +1,198 @@
+# Upgrade 4 modelling: single parameter file.
+#
+# Every leaf has: value, unit, tag, optional note, optional tbd.
+#   tag  [S] manufacturer specification or design target, [M] measured on the bench,
+#        [C] calculated or modelled, [L, <ref>] literature.
+#   tbd  true marks a placeholder. The board lists every tbd entry under "Open values".
+# Values are stored in lab units; src/u4/params.py converts them to SI.
+# Ranges are written as [min, max]. Scripts must read values from here and never hard-code them.
+
+meta:
+  project: {value: "OR-PAM Upgrade 4 modelling", unit: "-", tag: "[S]"}
+  active_milestone: {value: "M1", unit: "-", tag: "[S]"}
+  params_version: {value: "1.0 (M0/M1, 2026-10-30)", unit: "-", tag: "[C]"}
+
+# ---------------------------------------------------------------------------------------------
+# CONTEXT.md section 1: goal and limits
+goal:
+  time_budget_per_cell: {value: 30, unit: s, tag: "[S]", note: "Project requirement (CONTEXT.md 1). No source tag given there; [S] used for requirements."}
+  snr_target: {value: 42.8, unit: dB, tag: "[S]", note: "Acceptance SNR per cell (CONTEXT.md 1). Requirement; tag not given in CONTEXT.md."}
+  ed50_wbc: {value: 42, unit: J/cm², tag: "[L, project tolerance summary]", note: "Single-pulse damage threshold, white blood cells."}
+  ed50_k562: {value: 90, unit: J/cm², tag: "[L, project tolerance summary]", note: "Single-pulse damage threshold, K562."}
+
+# ---------------------------------------------------------------------------------------------
+# CONTEXT.md section 2: today's instrument as built
+today:
+  laser:
+    model: {value: "CryLaS FDSS532-Q3-IT", unit: "-", tag: "[S]"}
+    wavelength: {value: 532, unit: nm, tag: "[S]"}
+    pulse_fwhm: {value: 1.3, unit: ns, tag: "[S]", note: "Datasheet says < 1.3 ns. Upper bound used as the modelled FWHM (worst case for bandwidth)."}
+    pulse_shape: {value: gaussian, unit: "-", tag: "[C]", tbd: true, note: "Temporal shape not specified. Gaussian placeholder; sech2 and top-hat available on page 05."}
+    rep_rate: {value: [1.0, 2.5], unit: kHz, tag: "[S]"}
+    pulse_energy_laser: {value: [20, 35], unit: µJ, tag: "[S]"}
+    beam_diameter: {value: 0.4, unit: mm, tag: "[S]"}
+    divergence: {value: 5, unit: mrad, tag: "[S]", note: "Upper bound (< 5 mrad)."}
+  objective:
+    model: {value: "Thorlabs MY5X-802B", unit: "-", tag: "[S]"}
+    magnification: {value: 5, unit: "1", tag: "[S]"}
+    na: {value: 0.14, unit: "1", tag: "[S]"}
+    focal_length: {value: 40, unit: mm, tag: "[S]"}
+    spot_fwhm: {value: 2.0, unit: µm, tag: "[C]"}
+    dof_half: {value: 13.6, unit: µm, tag: "[C]", note: "Depth of focus, plus or minus."}
+  sample_light:
+    pulse_energy: {value: 380, unit: nJ, tag: "[C]", note: "Pulse energy at the sample."}
+    peak_fluence: {value: 8.4, unit: J/cm², tag: "[C]"}
+  sample:
+    slide: {value: "Countess C10228 PMMA slide", unit: "-", tag: "[S]"}
+    chamber_depth: {value: 100, unit: µm, tag: "[S]", note: "No tag in CONTEXT.md; product dimension assumed."}
+    pmma_thickness: {value: 0.7, unit: mm, tag: "[M]"}
+    water_path_range: {value: [12.8, 13.5], unit: mm, tag: "[M]", tbd: true, note: "No tag in CONTEXT.md; assumed measured. Also unclear whether it is measured from the transducer apex (assumed) or from the element rim. Confirm."}
+    water_path: {value: 13.0, unit: mm, tag: "[C]", note: "Nominal value used in the M1 prompt, inside the measured range. Apex to PMMA bottom face."}
+    water_temperature: {value: 22, unit: °C, tag: "[C]", tbd: true, note: "Lab water temperature not recorded. Placeholder room temperature."}
+  transducer:
+    model: {value: "Precision Acoustics TXZ_1075B (PA3421), PVDF", unit: "-", tag: "[S]"}
+    element_diameter: {value: 6, unit: mm, tag: "[S]"}
+    roc: {value: 12, unit: mm, tag: "[S]", note: "Radius of curvature = geometric focal length in water."}
+    centre_frequency: {value: 20.0, unit: MHz, tag: "[M, certificate]"}
+    band_6db: {value: [15.9, 26.2], unit: MHz, tag: "[M, certificate]"}
+    sensitivity: {value: 5.0, unit: µV/Pa, tag: "[C]", tbd: true, note: "Receive sensitivity into 50 ohm at centre frequency. Not on the certificate summary. Estimate: PVDF g33 0.33 Vm/N times ~28 µm film gives ~9 µV/Pa open circuit, about half after 50 ohm loading of ~100 pF. Replace with certificate or hydrophone calibration."}
+    geometry: {value: defocus, unit: "-", tag: "[C]", note: "On-axis point source integrated over the spherical cap through the PMMA plate (model 10)."}
+  electronics:
+    preamp_gain: {value: 13.6, unit: dB, tag: "[M]", note: "HP preamp."}
+    booster_gain: {value: 27, unit: dB, tag: "[S]", note: "HA booster."}
+    noise_figure: {value: 7.0, unit: dB, tag: "[C]", tbd: true, note: "First-stage noise figure. HP preamp model not identified; 7 dB is a placeholder typical of HP 8447-class amplifiers."}
+    source_resistance: {value: 50, unit: Ω, tag: "[C]", tbd: true, note: "Real part of the transducer source impedance seen by the preamp. Placeholder 50 ohm."}
+    noise_temperature: {value: 295, unit: K, tag: "[C]", tbd: true}
+    highpass: {value: 0.1, unit: MHz, tag: "[C]", tbd: true, note: "Lower corner of the amplifier chain, first order. Placeholder."}
+    lowpass: {value: 500, unit: MHz, tag: "[C]", tbd: true, note: "Upper corner of the amplifier chain, first order. Placeholder (digitiser bandwidth dominates)."}
+  digitiser:
+    model: {value: "AlazarTech ATS9352", unit: "-", tag: "[S]"}
+    bits: {value: 12, unit: bit, tag: "[S]"}
+    sample_rate: {value: 500, unit: MS/s, tag: "[S]"}
+    bandwidth: {value: 250, unit: MHz, tag: "[S]"}
+    bandwidth_order: {value: 2, unit: "1", tag: "[C]", tbd: true, note: "Butterworth order used to model the analogue bandwidth. Placeholder."}
+    input_range: {value: 0.4, unit: V, tag: "[C]", tbd: true, note: "Full-scale input, plus or minus. Placeholder (ATS9352 range setting used in the bead runs unknown)."}
+    adc_noise: {value: 1.0, unit: LSB, tag: "[C]", tbd: true, note: "Intrinsic ADC noise rms, in addition to quantisation. Placeholder."}
+  acquisition:
+    averages: {value: 1000, unit: count, tag: "[M]", note: "Shots per acquisition in the bead runs."}
+    record_samples: {value: 10000, unit: count, tag: "[M]"}
+  bead_test:
+    date: {value: "2026-09-05", unit: "-", tag: "[M]"}
+    diameter: {value: 10, unit: µm, tag: "[M]", note: "Absorbing beads. Material and absorption unknown (TBD)."}
+    snr_averaged: {value: 25, unit: dB, tag: "[M]", note: "With 1000 averages."}
+    arrival_time: {value: 9.5, unit: µs, tag: "[M]"}
+    spectrum_peak: {value: 12, unit: MHz, tag: "[M]"}
+    band: {value: [10, 13], unit: MHz, tag: "[M]"}
+    data_path: {value: "reza/points", unit: "-", tag: "[M]", note: "Oncoptic project folder. Not available to the model repository in M1."}
+    sound_speed: {value: 2350, unit: m/s, tag: "[L, polystyrene, typical]", tbd: true, note: "Bead material unknown; polystyrene placeholder."}
+    density: {value: 1050, unit: kg/m³, tag: "[L, polystyrene, typical]", tbd: true}
+
+# ---------------------------------------------------------------------------------------------
+# CONTEXT.md section 3: earlier estimates (used as check targets)
+earlier_estimates:
+  mismatch_loss: {value: 50, unit: dB, tag: "[C]", note: "Loss from the 20 MHz / 13 mm mismatch (CONTEXT.md 3)."}
+  snr_single_shot_cell: {value: [-40, -20], unit: dB, tag: "[C]", note: "Single-shot SNR for an unstained cell, today's chain."}
+
+# ---------------------------------------------------------------------------------------------
+# CONTEXT.md section 4 and the M1 prompt: Upgrade 1 chain (design targets)
+upgrade1:
+  laser:
+    wavelength: {value: 532, unit: nm, tag: "[S]", note: "Upgrade 1 does not change the colour (Upgrade 2 does)."}
+    pulse_fwhm: {value: 0.5, unit: ns, tag: "[S]", note: "M1 prompt value for the Upgrade 1 chain (design target)."}
+    pulse_shape: {value: gaussian, unit: "-", tag: "[C]", tbd: true}
+  sample_light:
+    pulse_energy: {value: 380, unit: nJ, tag: "[C]", tbd: true, note: "Assumed unchanged from today."}
+  sample:
+    dish: {value: "open-top glass or quartz dish with agar layer", unit: "-", tag: "[S]", note: "Agar and floor are modelled in M3, not in M1."}
+    pmma_thickness: {value: 0.0, unit: mm, tag: "[S]", note: "No plate between cell and transducer (open top)."}
+    water_path: {value: 0.3, unit: mm, tag: "[S]", note: "M1 prompt value (design target)."}
+    distance_range: {value: [40, 500], unit: µm, tag: "[S]", note: "Transducer to cell (CONTEXT.md 4)."}
+    water_temperature: {value: 22, unit: °C, tag: "[C]", tbd: true}
+  transducer:
+    reference: {value: "P1 375 MHz unit", unit: "-", tag: "[L, P1]"}
+    centre_frequency: {value: 375, unit: MHz, tag: "[L, P1]", note: "Peak of the modelled response."}
+    band_6db: {value: [150, 500], unit: MHz, tag: "[S]", tbd: true, note: "Upgrade 1 band target used as the -6 dB edges. P1's own bandwidth could not be read in M1 (full text not reachable). Final UHF transducer is open (CONTEXT.md 7)."}
+    focal_length: {value: 0.3, unit: mm, tag: "[C]", tbd: true, note: "Set equal to the 0.3 mm water path, cell at focus."}
+    sensitivity: {value: 5.0, unit: µV/Pa, tag: "[C]", tbd: true, note: "Set equal to today's placeholder on purpose, so the chain comparison isolates bandwidth, path and pulse effects. Replace with vendor value."}
+    geometry: {value: at_focus, unit: "-", tag: "[C]"}
+  electronics:
+    lna_gain: {value: 40, unit: dB, tag: "[S]", note: "M1 prompt value (design target)."}
+    noise_figure: {value: 3.0, unit: dB, tag: "[C]", tbd: true, note: "Placeholder for a modern UHF LNA."}
+    source_resistance: {value: 50, unit: Ω, tag: "[C]", tbd: true}
+    noise_temperature: {value: 295, unit: K, tag: "[C]", tbd: true}
+    highpass: {value: 1, unit: MHz, tag: "[C]", tbd: true}
+    lowpass: {value: 2000, unit: MHz, tag: "[C]", tbd: true}
+  digitiser:
+    sample_rate: {value: 8, unit: GS/s, tag: "[S]", note: "M1 prompt value; CONTEXT.md requires at least 4 GS/s."}
+    bits: {value: 12, unit: bit, tag: "[C]", tbd: true}
+    bandwidth: {value: 2500, unit: MHz, tag: "[C]", tbd: true}
+    bandwidth_order: {value: 2, unit: "1", tag: "[C]", tbd: true}
+    input_range: {value: 0.5, unit: V, tag: "[C]", tbd: true}
+    adc_noise: {value: 1.0, unit: LSB, tag: "[C]", tbd: true}
+  acquisition:
+    averages: {value: 1000, unit: count, tag: "[C]", tbd: true, note: "Same as today for comparison."}
+
+# ---------------------------------------------------------------------------------------------
+# CONTEXT.md section 4: Upgrade 2 (not modelled in M1, stored for completeness)
+upgrade2:
+  wavelengths: {value: [266, 420, 532], unit: nm, tag: "[S]"}
+  pulse_fwhm_266: {value: 0.5, unit: ns, tag: "[C]", tbd: true, note: "Final pulse duration at 266 nm open (CONTEXT.md 7). Sub-ns placeholder."}
+  pulse_fwhm_420: {value: 0.5, unit: ns, tag: "[C]", tbd: true, note: "Final pulse duration at 420 nm open (CONTEXT.md 7). Sub-ns placeholder."}
+
+# ---------------------------------------------------------------------------------------------
+# M1 test spheres and cell properties
+cell:
+  test_diameters: {value: [7, 12], unit: µm, tag: "[S]", note: "M1 prompt test cases. Not measured cell sizes."}
+  sound_speed: {value: 1550, unit: m/s, tag: "[C]", tbd: true, note: "Placeholder per M1 prompt. Literature for cells 1560 to 1575 m/s [L, P2]."}
+  sound_speed_literature: {value: [1560, 1575], unit: m/s, tag: "[L, P2]"}
+  density: {value: 1000, unit: kg/m³, tag: "[C]", tbd: true, note: "Placeholder, set near water so the M1 sphere is close to acoustically matched."}
+  gruneisen: {value: 0.12, unit: "1", tag: "[L, water near 22 °C]", tbd: true, note: "Cell Grüneisen parameter unknown; water value used."}
+  heat_capacity: {value: 4000, unit: J/(kg K), tag: "[L, water-like]", tbd: true}
+  mua_532: {value: 0.2, unit: 1/cm, tag: "[C]", tbd: true, note: "Unstained cell at 532 nm. Estimate: ~10 µM haem proteins (cytochromes) at ~10 /mM/cm gives 2.303 x 10 x 0.01 = 0.23 /cm. Very uncertain; page 12 sweeps 0.01 to 10 /cm."}
+  jurkat_diameter: {value: [11, 12], unit: µm, tag: "[L]", tbd: true, note: "CONTEXT.md 7: literature suggests about 11 to 12 µm; verify."}
+  tcell_diameter: {value: 7, unit: µm, tag: "[L]", tbd: true, note: "CONTEXT.md 7: about 7 µm; verify."}
+  nucleus_ratio: {value: null, unit: "1", tag: "[L]", tbd: true, note: "Nucleus-to-cell ratio, both types. Not used in M1."}
+  mito_load: {value: null, unit: "1", tag: "[L]", tbd: true, note: "Mitochondrial load, both types. Not used in M1."}
+  compartment_sound_speed: {value: null, unit: m/s, tag: "[L]", tbd: true, note: "Nucleus, cytoplasm, medium. Not used in M1."}
+  compartment_absorption: {value: null, unit: 1/cm, tag: "[L]", tbd: true, note: "Per compartment at 266, 420, 532 nm. Not used in M1."}
+
+# ---------------------------------------------------------------------------------------------
+# Water (medium) and PMMA
+water:
+  density: {value: 998, unit: kg/m³, tag: "[L, water at 20 °C]"}
+  sound_speed_coeffs: {value: [1402.385, 5.038813, -5.799136e-2, 3.287156e-4, -1.398845e-6, 2.787860e-9], unit: "m/s per °C^k", tag: "[L, Marczak 1997]", note: "c(T) = sum a_k T^k, T in °C, 0 to 95 °C."}
+  atten_coeffs_low: {value: [4.937e-4, -2.59e-5, 9.11e-7, -1.50e-8], unit: "dB/(km kHz²) per °C^k", tag: "[L, Francois and Garrison 1982]", note: "Pure-water f² term, T <= 20 °C."}
+  atten_coeffs_high: {value: [3.964e-4, -1.146e-5, 1.45e-7, -6.5e-10], unit: "dB/(km kHz²) per °C^k", tag: "[L, Francois and Garrison 1982]", note: "Pure-water f² term, T > 20 °C."}
+  atten_20C_reference: {value: 0.00217, unit: dB/(cm MHz²), tag: "[L, Pinkerton 1949]", note: "alpha/f² = 25.0e-17 s²/cm (Np) at 20 °C, independent cross-check of the formula."}
+pmma:
+  sound_speed: {value: 2750, unit: m/s, tag: "[L, typical acrylic]", tbd: true}
+  density: {value: 1190, unit: kg/m³, tag: "[L, typical acrylic]"}
+  atten_coeff: {value: 0.5, unit: dB/(cm MHz^n), tag: "[L, typical acrylic]", tbd: true, note: "Power law alpha = a0 f^n. Placeholder."}
+  atten_exponent: {value: 1.0, unit: "1", tag: "[L, typical acrylic]", tbd: true}
+
+# ---------------------------------------------------------------------------------------------
+# CONTEXT.md section 5 and 6: physics anchors and literature values used as checks
+physics:
+  gap_constants: {value: [1.4303, 2.4590, 3.4709], unit: "1", tag: "[L, Diebold 1990]", note: "Roots of tan x = x divided by pi; gap frequency = k c/d. CONTEXT.md quotes 1.43, 2.46, 3.47."}
+  pulse_length_12um_1550: {value: 7.7, unit: ns, tag: "[C]", note: "CONTEXT.md 5: 12 µm at 1550 m/s gives 7.7 ns."}
+  laser_cutoff_factor: {value: 0.44, unit: "1", tag: "[C]", note: "Cut-off ~ 0.44 / pulse FWHM (half-amplitude point of a Gaussian)."}
+  laser_cutoff_1p3ns: {value: 340, unit: MHz, tag: "[C]", note: "CONTEXT.md 5."}
+  p1_water_loss: {value: 20, unit: dB, tag: "[L, P1]", note: "As quoted in CONTEXT.md 5: about 20 dB over 50 µm of water at 1 GHz and 37 °C."}
+  p1_water_loss_path: {value: 50, unit: µm, tag: "[L, P1]"}
+  p1_water_loss_freq: {value: 1000, unit: MHz, tag: "[L, P1]"}
+  p1_water_loss_temp: {value: 37, unit: °C, tag: "[L, P1]"}
+  p2_mcf7_diameter: {value: 17.5, unit: µm, tag: "[L, P2]"}
+  p2_mcf7_sound_speed: {value: 1573, unit: m/s, tag: "[L, P2]"}
+  p2_mcf7_optical_diameter: {value: 16, unit: µm, tag: "[L, P2]"}
+  gold_film_thickness: {value: 200, unit: nm, tag: "[L, P1]"}
+
+# ---------------------------------------------------------------------------------------------
+# Numerical settings
+simulation:
+  fs: {value: 100, unit: GS/s, tag: "[C]", note: "Internal sampling of the analogue simulation."}
+  t_pre: {value: 0.5, unit: µs, tag: "[C]", note: "Window before the retarded arrival of the sphere centre."}
+  t_post: {value: 3.5, unit: µs, tag: "[C]"}
+  sir_annuli: {value: 400, unit: count, tag: "[C]", note: "Annuli used to integrate the spherical cap (model 10)."}
+  noise_seed: {value: 1, unit: count, tag: "[C]"}
+  analysis_band_db: {value: 20, unit: dB, tag: "[C]", note: "Digital band-pass for SNR: where the clean received spectrum is within 20 dB of its peak."}
+  mua_sweep: {value: [0.01, 10], unit: 1/cm, tag: "[C]", note: "Sweep range for SNR versus absorption (page 12)."}
